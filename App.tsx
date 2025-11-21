@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import sdk from '@farcaster/frame-sdk';
 import Header from './components/Header';
@@ -5,7 +6,7 @@ import DailyWinnerHero from './components/DailyWinnerHero';
 import VoteList from './components/VoteList';
 import TransactionModal from './components/TransactionModal';
 import PlaylistView from './components/PlaylistView';
-import { INITIAL_SONGS, PAST_WINNERS } from './services/mockData';
+import { PAST_WINNERS } from './services/mockData';
 import { Song, AppView, VoteStatus, DailyWinner } from './types';
 import { generateDailyTrivia, generateVibeDescription } from './services/geminiService';
 import { castOnChainVote } from './services/web3Service';
@@ -16,7 +17,25 @@ const App: React.FC = () => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null); // Farcaster username
-  const [songs, setSongs] = useState<Song[]>(INITIAL_SONGS);
+  
+  // Start with empty or minimal list, users will fill it by searching
+  const [songs, setSongs] = useState<Song[]>([
+     {
+        id: '1440651615',
+        title: 'Not Like Us',
+        artist: 'Kendrick Lamar',
+        coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/38/79/e0/3879e025-da15-5698-1d89-190c81343008/24UMGIM47526.rgb.jpg/600x600bb.jpg',
+        voteCount: 420
+     },
+     {
+        id: '1712593365',
+        title: 'Espresso',
+        artist: 'Sabrina Carpenter',
+        coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/0b/20/56/0b20565d-3b1b-2162-6c1a-5c725497f27e/24UMGIM27615.rgb.jpg/600x600bb.jpg',
+        voteCount: 310
+     }
+  ]);
+
   const [voteStatus, setVoteStatus] = useState<VoteStatus>('idle');
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
   const [dailyTrivia, setDailyTrivia] = useState<string>('');
@@ -85,6 +104,7 @@ const App: React.FC = () => {
     const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
     
     try {
+      // Always force popup by default for better UX inside Frame
       // Check for providers with a small delay for injection
       if (!window.ethereum && !window.okxwallet) {
          await wait(500);
@@ -95,6 +115,7 @@ const App: React.FC = () => {
 
       if (provider) {
         console.log("Found provider, requesting accounts...");
+        // Force request to trigger popup
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
         
         if (accounts && accounts.length > 0) {
@@ -115,6 +136,7 @@ const App: React.FC = () => {
       throw new Error("No active wallet found");
 
     } catch (error) {
+      alert("Wallet connection failed or rejected. Switching to Demo Mode for preview.");
       console.warn("Wallet connection failed, switching to Demo Mode:", error);
       
       // FAIL-SAFE: Switch to Demo Mode immediately
@@ -144,10 +166,19 @@ const App: React.FC = () => {
     );
 
     if (success) {
-      // Update local state to reflect the vote
-      setSongs(prev => prev.map(s => 
-        s.id === song.id ? { ...s, voteCount: s.voteCount + 1 } : s
-      ));
+      // Check if song exists in our local list
+      setSongs(prev => {
+        const exists = prev.find(s => s.id === song.id);
+        if (exists) {
+           // If exists, increment vote
+           return prev.map(s => s.id === song.id ? { ...s, voteCount: s.voteCount + 1 } : s);
+        } else {
+           // If new (from search), add to list with 1 vote
+           return [...prev, { ...song, voteCount: 1 }];
+        }
+      });
+      
+      // Clear search in VoteList (handled by UI re-render with updated songs list)
       
       // Auto close modal after success
       setTimeout(() => {
@@ -168,6 +199,11 @@ const App: React.FC = () => {
     
     try {
         const winner = sortedSongs[0];
+        if (!winner) {
+             setIsProcessingEnd(false);
+             return;
+        }
+
         console.log("Ending day. Winner:", winner.title);
         
         const vibe = await generateVibeDescription(winner);
@@ -181,9 +217,11 @@ const App: React.FC = () => {
 
         setPastWinners(prev => [newWinnerRecord, ...prev]);
 
+        // Reset votes for next day but keep popular songs? 
+        // Or clear list? Let's keep list but reset votes to 0
         setSongs(prev => prev.map(s => ({
           ...s,
-          voteCount: Math.floor(Math.random() * 50) + 10
+          voteCount: 0
         })));
 
         setCurrentView(AppView.PLAYLIST);
@@ -236,7 +274,7 @@ const App: React.FC = () => {
 
         {currentView === AppView.HOME && (
           <>
-            <DailyWinnerHero song={dailyWinner} />
+            <DailyWinnerHero song={dailyWinner || songs[0]} />
             <VoteList 
               songs={sortedSongs} 
               onVote={handleVote} 
