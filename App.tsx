@@ -48,8 +48,15 @@ const App: React.FC = () => {
   // Farcaster State
   const [sdkContext, setSdkContext] = useState<any>(null);
   
-  // Playlist State
-  const [pastWinners, setPastWinners] = useState<DailyWinner[]>(PAST_WINNERS);
+  // Playlist State - Initialized from LocalStorage if available
+  const [pastWinners, setPastWinners] = useState<DailyWinner[]>(() => {
+    try {
+      const saved = localStorage.getItem('music_base_playlist');
+      return saved ? JSON.parse(saved) : PAST_WINNERS;
+    } catch (e) {
+      return PAST_WINNERS;
+    }
+  });
   const [isProcessingEnd, setIsProcessingEnd] = useState(false);
 
   // Timer State
@@ -236,6 +243,7 @@ const App: React.FC = () => {
 
         console.log("Ending day. Winner:", winner.title);
         
+        // Generate vibe with Gemini
         const vibe = await generateVibeDescription(winner);
         
         const newWinnerRecord: DailyWinner = {
@@ -245,15 +253,20 @@ const App: React.FC = () => {
           vibeDescription: vibe
         };
 
-        setPastWinners(prev => [newWinnerRecord, ...prev]);
+        // Update State and LocalStorage
+        setPastWinners(prev => {
+          const newHistory = [newWinnerRecord, ...prev];
+          localStorage.setItem('music_base_playlist', JSON.stringify(newHistory));
+          return newHistory;
+        });
 
-        // Reset votes for next day but keep popular songs? 
-        // Or clear list? Let's keep list but reset votes to 0
+        // Reset votes for next day
         setSongs(prev => prev.map(s => ({
           ...s,
           voteCount: 0
         })));
 
+        // Switch view to playlist to show the result
         setCurrentView(AppView.PLAYLIST);
 
       } catch (error) {
@@ -270,8 +283,9 @@ const App: React.FC = () => {
     const interval = setInterval(() => {
       setSecondsLeft(prev => {
         if (prev <= 1) {
+          // Trigger end day
           endDayLogic();
-          return 86400; 
+          return 86400; // Reset timer for next day (24h)
         }
         return prev - 1;
       });

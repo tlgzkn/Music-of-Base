@@ -51,13 +51,13 @@ const VoteList: React.FC<VoteListProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Header & Search */}
+      {/* Header & Timer */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
            <h2 className="text-2xl font-bold text-white">
-             {searchTerm ? 'Search Results' : 'Top Candidates'}
+             {searchTerm ? 'Search Results' : 'Vote Now'}
            </h2>
-           {!searchTerm && <p className="text-slate-400 text-sm">Vote for the daily winner or search to add a new song.</p>}
+           {!searchTerm && <p className="text-slate-400 text-sm">Search for a song or vote for the daily winner.</p>}
         </div>
 
         {/* Timer (Only show if not searching) */}
@@ -92,6 +92,13 @@ const VoteList: React.FC<VoteListProps> = ({
           </button>
         )}
       </div>
+
+      {/* Sub-header for Candidates (Only if not searching) */}
+      {!searchTerm && displayList.length > 0 && (
+        <div className="pt-2">
+          <h3 className="text-xl font-bold text-white border-b border-slate-800 pb-2">Top Candidates</h3>
+        </div>
+      )}
 
       {/* List */}
       <div className="grid grid-cols-1 gap-3">

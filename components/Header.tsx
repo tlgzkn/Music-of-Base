@@ -39,12 +39,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, isWalletCo
           >
             Today's Mix
           </button>
-          <button 
-             onClick={() => setCurrentView(AppView.VOTE)}
-             className={`hover:text-blue-400 transition-colors ${currentView === AppView.VOTE ? 'text-blue-400' : ''}`}
-          >
-            Vote Now
-          </button>
+          {/* Removed Vote Now Tab */}
           <button 
              onClick={() => setCurrentView(AppView.PLAYLIST)}
              className={`hover:text-blue-400 transition-colors ${currentView === AppView.PLAYLIST ? 'text-blue-400' : ''}`}
@@ -95,13 +90,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, isWalletCo
             <i className="fas fa-home"></i>
             <span className="text-[10px]">Home</span>
           </button>
-          <button 
-             onClick={() => setCurrentView(AppView.VOTE)}
-             className={`p-2 flex flex-col items-center gap-1 ${currentView === AppView.VOTE ? 'text-blue-400' : 'text-slate-500'}`}
-          >
-            <i className="fas fa-vote-yea"></i>
-            <span className="text-[10px]">Vote</span>
-          </button>
+          {/* Removed Vote Now Tab */}
           <button 
              onClick={() => setCurrentView(AppView.PLAYLIST)}
              className={`p-2 flex flex-col items-center gap-1 ${currentView === AppView.PLAYLIST ? 'text-blue-400' : 'text-slate-500'}`}
