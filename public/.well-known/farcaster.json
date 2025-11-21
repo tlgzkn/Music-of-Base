@@ -36,6 +36,8 @@
     "heroImageUrl": "https://music-of-base.vercel.app/image.png",
     "ogTitle": "Music of Base",
     "ogDescription": "Vote daily for the Song of the Day on Base.",
-    "ogImageUrl": "https://music-of-base.vercel.app/image.png"
+    "ogImageUrl": "https://music-of-base.vercel.app/image.png",
+    "webhookUrl": "https://music-of-base.vercel.app/api/webhook",
+    "castShareUrl": "https://warpcast.com/~/compose?text=Vote%20for%20the%20Song%20of%20the%20Day%20on%20Base!&embeds[]=https://music-of-base.vercel.app"
   }
 }
