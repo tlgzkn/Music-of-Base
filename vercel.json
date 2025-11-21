@@ -1,7 +1,13 @@
 {
   "framework": "vite",
+  "redirects": [
+    {
+      "source": "/.well-known/farcaster.json",
+      "destination": "https://api.farcaster.xyz/miniapps/hosted-manifest/019aa3f3-47e6-0869-7e9a-9c8e0b1c6fd8",
+      "permanent": false
+    }
+  ],
   "rewrites": [
-    { "source": "/.well-known/farcaster.json", "destination": "/.well-known/farcaster.json" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
