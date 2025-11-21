@@ -1,0 +1,41 @@
+{
+  "accountAssociation": {
+    "header": "eyJmaWQiOjMwMTY5MywidHlwZSI6ImF1dGgiLCJrZXkiOiIweDQ5ZmY1ZjBlYmVBODkzRGY1NWY3ZWVFODViQjhCMDRhRmJERjAxNGUifQ",
+    "payload": "eyJkb21haW4iOiJtdXNpYy1vZi1iYXNlLnZlcmNlbC5hcHAifQ",
+    "signature": "KlBGwplZKi3GFENw6SehHLzFf/jKSHCsNADxBHcPyqYIHviwENa4ED26fTC4l7/27AUJkTkisixFqCwLRhmftBs="
+  },
+  "frame": {
+    "version": "1",
+    "name": "Music of Base",
+    "iconUrl": "https://music-of-base.vercel.app/icon.png",
+    "homeUrl": "https://music-of-base.vercel.app",
+    "imageUrl": "https://music-of-base.vercel.app/image.png",
+    "buttonTitle": "Vote Now",
+    "splashImageUrl": "https://music-of-base.vercel.app/splash.png",
+    "splashBackgroundColor": "#0B1220",
+    "subtitle": "Daily on-chain song voting",
+    "tagline": "Daily on-chain song voting",
+    "requiredChains": [
+      "eip155:8453"
+    ],
+    "requiredCapabilities": [
+      "wallet.request",
+      "wallet.requestAddress"
+    ],
+    "description": "Users vote every day for their favorite song on Base. The top-voted track becomes the Song of the Day.",
+    "screenshotUrls": [
+      "https://music-of-base.vercel.app/image.png"
+    ],
+    "primaryCategory": "music",
+    "tags": [
+      "music",
+      "voting",
+      "base",
+      "spotify"
+    ],
+    "heroImageUrl": "https://music-of-base.vercel.app/image.png",
+    "ogTitle": "Music of Base",
+    "ogDescription": "Vote daily for the Song of the Day on Base.",
+    "ogImageUrl": "https://music-of-base.vercel.app/image.png"
+  }
+}
