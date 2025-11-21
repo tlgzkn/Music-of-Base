@@ -1,20 +1,37 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Music of Base 🎵
 
-# Run and deploy your AI Studio app
+Music of Base is a decentralized, community-curated daily music selection app built on the Base L2 blockchain.
 
-This contains everything you need to run your app locally.
+## Features
 
-View your app in AI Studio: https://ai.studio/apps/drive/1bQgw9zf9I75a4L_d_pvRo9_d47kYDWv_
+- **Daily Voting:** Users vote for their favorite tracks on-chain.
+- **AI Powered:** Google Gemini generates vibe checks and daily trivia.
+- **Farcaster Frame:** Fully compatible as a Farcaster Mini App (Frames v2).
+- **Responsive Design:** Works seamlessly on mobile and desktop.
 
-## Run Locally
+## Tech Stack
 
-**Prerequisites:**  Node.js
+- **Frontend:** React, Vite, Tailwind CSS
+- **Blockchain:** Base (Ethereum L2)
+- **AI:** Google Gemini API (@google/genai)
+- **Integration:** Farcaster Frame SDK
 
+## Getting Started
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+1. Clone the repository.
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Create a `.env` file and add your Google API Key:
+   ```
+   VITE_API_KEY=your_api_key_here
+   ```
+4. Run the development server:
+   ```bash
+   npm run dev
+   ```
+
+## Deployment
+
+Deployed on Vercel. Ensure you set the `API_KEY` environment variable in your Vercel project settings.

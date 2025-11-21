@@ -6,27 +6,35 @@ import { Song } from '../types';
 let aiClient: GoogleGenAI | null = null;
 
 // Helper to get or create the client instance safely
-const getAiClient = () => {
-  if (!aiClient) {
-    // Try to get key from process.env (polyfilled by Vite)
-    // Fallback to empty string to allow instantiation without crashing immediately
-    const apiKey = process.env.API_KEY || "";
-    // Only create client if we have a string (even empty), preventing undefined errors
-    aiClient = new GoogleGenAI({ apiKey: apiKey });
+const getAiClient = (): GoogleGenAI | null => {
+  if (aiClient) return aiClient;
+
+  // Try to get key from process.env
+  const apiKey = process.env.API_KEY;
+
+  // If no key provided, return null instead of crashing
+  if (!apiKey || typeof apiKey !== 'string' || apiKey.trim() === '') {
+    return null;
   }
-  return aiClient;
+
+  try {
+    aiClient = new GoogleGenAI({ apiKey: apiKey });
+    return aiClient;
+  } catch (error) {
+    console.error("Failed to initialize Gemini client:", error);
+    return null;
+  }
 };
 
 export const generateVibeDescription = async (song: Song): Promise<string> => {
   try {
-    const apiKey = process.env.API_KEY;
-    // If no key provided at build/runtime, skip API call to avoid 400 errors
-    if (!apiKey) {
-      console.warn("API Key is missing. Using fallback description.");
+    const ai = getAiClient();
+    
+    // Graceful fallback if AI is not configured
+    if (!ai) {
+      console.info("Gemini API Key missing. Using offline fallback.");
       return "The community has spoken. A certified banger.";
     }
-
-    const ai = getAiClient();
     
     const prompt = `
       You are a music curator for a cool, web3-native music app called "Music of Base".
@@ -52,10 +60,8 @@ export const generateVibeDescription = async (song: Song): Promise<string> => {
 
 export const generateDailyTrivia = async (): Promise<string> => {
    try {
-    const apiKey = process.env.API_KEY;
-    if (!apiKey) return "Music is the universal language of the decentralized web.";
-
     const ai = getAiClient();
+    if (!ai) return "Music is the universal language of the decentralized web.";
 
     const prompt = `
       Give me one interesting, short fact about the intersection of music and technology (or blockchain).
