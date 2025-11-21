@@ -14,6 +14,10 @@ declare namespace NodeJS {
     SPOTIFY_CLIENT_SECRET: string;
     SPOTIFY_PLAYLIST_ID: string;
     SPOTIFY_REFRESH_TOKEN: string;
+    YOUTUBE_CLIENT_ID: string;
+    YOUTUBE_CLIENT_SECRET: string;
+    YOUTUBE_REFRESH_TOKEN: string;
+    YOUTUBE_PLAYLIST_ID: string;
     [key: string]: string | undefined;
   }
 }

@@ -10,6 +10,7 @@ import { Song, AppView, VoteStatus, DailyWinner } from './types';
 import { generateVibeDescription } from './services/geminiService';
 import { castOnChainVote } from './services/web3Service';
 import { searchSpotifyTrack, addTrackToPlaylist, handleSpotifyCallback } from './services/spotifyService';
+import { searchVideo, addVideoToPlaylist } from './services/youtubeService';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>(AppView.HOME);
@@ -245,10 +246,9 @@ const App: React.FC = () => {
     const winner = sortedSongs[0];
     if (!winner) return;
 
-    // DUPLICATE CHECK: Prevent adding the same song multiple times if the page refreshes or timer glitches
+    // DUPLICATE CHECK: Prevent adding the same song multiple times
     if (pastWinners.length > 0) {
       const lastWinner = pastWinners[0];
-      // Compare Title and Artist (ID might be different depending on source)
       if (lastWinner.title === winner.title && lastWinner.artist === winner.artist) {
           console.log("Day already ended for this winner. Skipping duplicate processing.");
           return;
@@ -263,16 +263,24 @@ const App: React.FC = () => {
         // 1. Generate vibe with Gemini
         const vibe = await generateVibeDescription(winner);
 
-        // 2. Try to Add to Spotify Playlist
-        // Note: This only works if an Admin (you) has connected Spotify previously on this browser
+        // 2. Sync to Spotify
         console.log("Attempting Spotify Sync...");
         const spotifyUri = await searchSpotifyTrack(winner.title, winner.artist);
         if (spotifyUri) {
           const added = await addTrackToPlaylist(spotifyUri);
           if (added) console.log("Successfully added to Spotify!");
-          else console.warn("Failed to add to Spotify (Check Auth/Token)");
         } else {
           console.warn("Track not found on Spotify");
+        }
+
+        // 3. Sync to YouTube Music
+        console.log("Attempting YouTube Sync...");
+        const videoId = await searchVideo(winner.title, winner.artist);
+        if (videoId) {
+           const added = await addVideoToPlaylist(videoId);
+           if (added) console.log("Successfully added to YouTube!");
+        } else {
+           console.warn("Track not found on YouTube");
         }
         
         const newWinnerRecord: DailyWinner = {
@@ -282,21 +290,20 @@ const App: React.FC = () => {
           vibeDescription: vibe
         };
 
-        // 3. Update State and LocalStorage
+        // 4. Update State and LocalStorage
         setPastWinners(prev => {
-          // Ensure no exact duplicates (optional check)
           const newHistory = [newWinnerRecord, ...prev];
           localStorage.setItem('music_base_playlist', JSON.stringify(newHistory));
           return newHistory;
         });
 
-        // 4. Reset votes for next day
+        // 5. Reset votes for next day
         setSongs(prev => prev.map(s => ({
           ...s,
           voteCount: 0
         })));
 
-        // 5. Switch view to playlist
+        // 6. Switch view to playlist
         setCurrentView(AppView.PLAYLIST);
 
       } catch (error) {
@@ -381,7 +388,7 @@ const App: React.FC = () => {
             <div className="text-center animate-pulse">
                 <i className="fas fa-compact-disc fa-spin text-6xl text-blue-500 mb-4"></i>
                 <h2 className="text-2xl font-bold text-white">Finalizing Day...</h2>
-                <p className="text-blue-300">Syncing to Blockchain & Spotify Playlist...</p>
+                <p className="text-blue-300">Syncing to Spotify & YouTube...</p>
             </div>
         </div>
       )}

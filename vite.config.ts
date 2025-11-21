@@ -19,6 +19,10 @@ export default defineConfig(({ mode }) => {
       'process.env.SPOTIFY_CLIENT_SECRET': JSON.stringify(env.SPOTIFY_CLIENT_SECRET),
       'process.env.SPOTIFY_PLAYLIST_ID': JSON.stringify(env.SPOTIFY_PLAYLIST_ID),
       'process.env.SPOTIFY_REFRESH_TOKEN': JSON.stringify(env.SPOTIFY_REFRESH_TOKEN),
+      'process.env.YOUTUBE_CLIENT_ID': JSON.stringify(env.YOUTUBE_CLIENT_ID),
+      'process.env.YOUTUBE_CLIENT_SECRET': JSON.stringify(env.YOUTUBE_CLIENT_SECRET),
+      'process.env.YOUTUBE_REFRESH_TOKEN': JSON.stringify(env.YOUTUBE_REFRESH_TOKEN),
+      'process.env.YOUTUBE_PLAYLIST_ID': JSON.stringify(env.YOUTUBE_PLAYLIST_ID),
       'global': 'globalThis',
     }
   }
