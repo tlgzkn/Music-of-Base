@@ -9,7 +9,7 @@ import { PAST_WINNERS } from './services/mockData';
 import { Song, AppView, VoteStatus, DailyWinner } from './types';
 import { generateVibeDescription } from './services/geminiService';
 import { castOnChainVote } from './services/web3Service';
-import { searchSpotifyTrack, addTrackToPlaylist, handleSpotifyCallback, authenticateSpotify } from './services/spotifyService';
+import { searchSpotifyTrack, addTrackToPlaylist, handleSpotifyCallback } from './services/spotifyService';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>(AppView.HOME);
@@ -324,11 +324,6 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [endDayLogic, isProcessingEnd]);
 
-  // Helper to handle manual Spotify auth trigger
-  const handleSpotifyLogin = () => {
-    authenticateSpotify();
-  };
-
   return (
     <div className="min-h-screen pb-20 md:pb-0 relative">
       <Header 
@@ -339,7 +334,6 @@ const App: React.FC = () => {
         walletAddress={walletAddress}
         username={username}
         connectWallet={handleConnectWallet}
-        onConnectSpotify={handleSpotifyLogin} // Pass the handler
       />
 
       <main className="max-w-4xl mx-auto px-4 py-8">

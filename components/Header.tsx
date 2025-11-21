@@ -9,7 +9,6 @@ interface HeaderProps {
   walletAddress: string | null;
   username?: string | null;
   connectWallet: () => void;
-  onConnectSpotify?: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -19,8 +18,7 @@ const Header: React.FC<HeaderProps> = ({
   isConnecting, 
   walletAddress, 
   username, 
-  connectWallet,
-  onConnectSpotify
+  connectWallet
 }) => {
   
   const formatAddress = (addr: string) => {
@@ -64,17 +62,6 @@ const Header: React.FC<HeaderProps> = ({
         </nav>
 
         <div className="flex items-center gap-3">
-          {/* Secret Admin Button for Spotify Auth - Only visible on desktop/md */}
-          {onConnectSpotify && (
-            <button 
-              onClick={onConnectSpotify}
-              className="hidden md:flex w-8 h-8 items-center justify-center rounded-full text-slate-600 hover:text-[#1DB954] hover:bg-white/5 transition-all"
-              title="Admin: Connect Spotify"
-            >
-              <i className="fab fa-spotify"></i>
-            </button>
-          )}
-
           <button 
             type="button"
             onClick={connectWallet}

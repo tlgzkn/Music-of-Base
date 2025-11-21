@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { DailyWinner } from '../types';
 
 interface PlaylistViewProps {
@@ -6,16 +6,6 @@ interface PlaylistViewProps {
 }
 
 const PlaylistView: React.FC<PlaylistViewProps> = ({ winners }) => {
-  const [isSyncing, setIsSyncing] = useState(true);
-
-  // Simulate API syncing effect when view opens
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsSyncing(false);
-    }, 2500);
-    return () => clearTimeout(timer);
-  }, []);
-
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500 mt-20 pb-20">
       
@@ -25,18 +15,14 @@ const PlaylistView: React.FC<PlaylistViewProps> = ({ winners }) => {
         
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
           <div>
-             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-bold mb-4">
-                <span className={`w-2 h-2 rounded-full ${isSyncing ? 'bg-yellow-400 animate-ping' : 'bg-green-500'}`}></span>
-                {isSyncing ? 'SYNCING BLOCKCHAIN DATA...' : 'LIVE PLAYLIST SYNC ACTIVE'}
-             </div>
              <h2 className="text-3xl md:text-4xl font-black text-white mb-2">Official Community Playlist</h2>
-             <p className="text-slate-400 max-w-md text-lg">The daily winners, curated by you, automatically added to our streaming partners.</p>
+             <p className="text-slate-400 max-w-md text-lg">Playlist of the daily winners, curated by you.</p>
           </div>
 
           <div className="flex flex-wrap gap-3">
             <button className="flex items-center gap-3 px-6 py-3 bg-[#1DB954] hover:bg-[#1ed760] text-slate-900 font-bold rounded-full transition-all shadow-lg shadow-green-900/40 active:scale-95">
-              <i className={`fab fa-spotify text-xl ${isSyncing ? 'animate-spin' : ''}`}></i> 
-              {isSyncing ? 'Syncing...' : 'Open Spotify'}
+              <i className="fab fa-spotify text-xl"></i> 
+              Open Spotify
             </button>
             <button className="flex items-center justify-center w-12 h-12 bg-slate-800 hover:bg-slate-700 text-white rounded-full border border-slate-700 transition-colors">
               <i className="fab fa-apple text-xl"></i>
