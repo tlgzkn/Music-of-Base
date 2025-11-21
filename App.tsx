@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import sdk from '@farcaster/frame-sdk';
 import Header from './components/Header';
@@ -9,6 +8,7 @@ import PlaylistView from './components/PlaylistView';
 import { INITIAL_SONGS, PAST_WINNERS } from './services/mockData';
 import { Song, AppView, VoteStatus, DailyWinner } from './types';
 import { generateDailyTrivia, generateVibeDescription } from './services/geminiService';
+import { castOnChainVote } from './services/web3Service';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>(AppView.HOME);
@@ -28,7 +28,7 @@ const App: React.FC = () => {
   const [pastWinners, setPastWinners] = useState<DailyWinner[]>(PAST_WINNERS);
   const [isProcessingEnd, setIsProcessingEnd] = useState(false);
 
-  // Timer State - Initial demo: 15 seconds, then resets to 24 hours
+  // Timer State
   const [secondsLeft, setSecondsLeft] = useState(15);
 
   // Initialize Farcaster SDK
@@ -73,7 +73,6 @@ const App: React.FC = () => {
       setIsWalletConnected(false);
       setWalletAddress(null);
       setUsername(null);
-      // If we are in Farcaster, keep the username for display but show as disconnected
       if (sdkContext?.user?.username) {
          setUsername(sdkContext.user.username);
       }
@@ -82,8 +81,15 @@ const App: React.FC = () => {
 
     setIsConnecting(true);
 
+    // Wait function to handle injection delay
+    const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+    
     try {
-      // 1. Attempt Real Wallet Connection (Force Popup)
+      // Check for providers with a small delay for injection
+      if (!window.ethereum && !window.okxwallet) {
+         await wait(500);
+      }
+
       // @ts-ignore
       const provider = window.okxwallet || window.ethereum;
 
@@ -94,71 +100,60 @@ const App: React.FC = () => {
         if (accounts && accounts.length > 0) {
           console.log("Wallet Connected:", accounts[0]);
           setWalletAddress(accounts[0]);
-          setIsWalletConnected(true);
           
-          // If we are in Farcaster context, ensure username is set
+          // Match Farcaster username if available
           if (sdkContext?.user?.username) {
             setUsername(sdkContext.user.username);
           }
           
-          setIsConnecting(false);
-          return;
+          setIsWalletConnected(true);
+          return; // Success exit
         }
       }
 
-      // If we are here, provider exists but returned no accounts, or provider doesn't exist.
-      // BUT if we are in Farcaster Frame, we might not have a standard provider but still have a context address.
-      // This is a fallback for "Read-Only" connection if the active connection failed.
-      if (sdkContext?.user) {
-        let farcasterAddress = sdkContext.user.verifiedAddresses?.[0] || sdkContext.user.custodyAddress;
-        if (farcasterAddress) {
-             console.log("Active connection failed, falling back to Farcaster Context Address");
-             setWalletAddress(farcasterAddress);
-             if (sdkContext.user.username) setUsername(sdkContext.user.username);
-             setIsWalletConnected(true);
-             setIsConnecting(false);
-             return;
-        }
-      }
-
-      throw new Error("No wallet provider found");
+      // If real wallet fails or doesn't exist, throw to trigger demo mode
+      throw new Error("No active wallet found");
 
     } catch (error) {
-      console.warn("Wallet connection error, switching to Demo Mode:", error);
+      console.warn("Wallet connection failed, switching to Demo Mode:", error);
       
-      // 3. FALLBACK: Demo Mode (Fail-Safe)
-      // Always ensure the user feels "connected" to try the app
+      // FAIL-SAFE: Switch to Demo Mode immediately
       setWalletAddress("0x71C...9A21");
-      
-      // Even in demo mode, if we know the Farcaster username, show it
       if (sdkContext?.user?.username) {
          setUsername(sdkContext.user.username);
       }
-      
       setIsWalletConnected(true);
     } finally {
       setIsConnecting(false);
     }
   };
 
-  const handleVote = (song: Song) => {
+  const handleVote = async (song: Song) => {
     if (!isWalletConnected) {
       handleConnectWallet();
       return;
     }
+    
+    // Use Web3 Service
     setSelectedSong(song);
-    setVoteStatus('signing');
+    
+    const success = await castOnChainVote(
+      song, 
+      walletAddress || "0x00", 
+      setVoteStatus
+    );
 
-    // Simulate Blockchain Transaction Lifecycle
-    setTimeout(() => {
-      setVoteStatus('confirming');
+    if (success) {
+      // Update local state to reflect the vote
+      setSongs(prev => prev.map(s => 
+        s.id === song.id ? { ...s, voteCount: s.voteCount + 1 } : s
+      ));
+      
+      // Auto close modal after success
       setTimeout(() => {
-        setSongs(prev => prev.map(s => 
-          s.id === song.id ? { ...s, voteCount: s.voteCount + 1 } : s
-        ));
-        setVoteStatus('success');
+        closeVoteModal();
       }, 2000);
-    }, 1500);
+    }
   };
 
   const closeVoteModal = () => {
@@ -172,31 +167,25 @@ const App: React.FC = () => {
     setIsProcessingEnd(true);
     
     try {
-        // 1. Get the Winner
         const winner = sortedSongs[0];
         console.log("Ending day. Winner:", winner.title);
         
-        // 2. Generate AI Vibe Description for History
         const vibe = await generateVibeDescription(winner);
         
-        // 3. Create New History Record
         const newWinnerRecord: DailyWinner = {
           ...winner,
-          id: `${winner.id}-${Date.now()}`, // Unique ID for history
+          id: `${winner.id}-${Date.now()}`,
           date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
           vibeDescription: vibe
         };
 
-        // 4. Update Playlist State
         setPastWinners(prev => [newWinnerRecord, ...prev]);
 
-        // 5. Reset Votes for Next Day (with small random seed)
         setSongs(prev => prev.map(s => ({
           ...s,
           voteCount: Math.floor(Math.random() * 50) + 10
         })));
 
-        // 6. Switch View
         setCurrentView(AppView.PLAYLIST);
 
       } catch (error) {
@@ -213,9 +202,7 @@ const App: React.FC = () => {
     const interval = setInterval(() => {
       setSecondsLeft(prev => {
         if (prev <= 1) {
-          // Trigger end of day
           endDayLogic();
-          // Reset timer to 24 hours (86400 seconds)
           return 86400; 
         }
         return prev - 1;
@@ -273,7 +260,7 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {/* Modal handles voting AND automatic processing display */}
+      {/* End Day Loading Overlay */}
       {isProcessingEnd && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm">
             <div className="text-center animate-pulse">

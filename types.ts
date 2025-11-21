@@ -19,3 +19,11 @@ export enum AppView {
 }
 
 export type VoteStatus = 'idle' | 'signing' | 'confirming' | 'success' | 'error';
+
+// Web3 Types
+export interface TransactionReceipt {
+  to: string;
+  from: string;
+  status: boolean;
+  hash: string;
+}
