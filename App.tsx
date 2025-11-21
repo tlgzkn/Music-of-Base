@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import sdk from '@farcaster/frame-sdk';
+import sdk, { type FrameContext } from '@farcaster/frame-sdk';
 import Header from './components/Header';
 import DailyWinnerHero from './components/DailyWinnerHero';
 import VoteList from './components/VoteList';
@@ -20,6 +20,9 @@ const App: React.FC = () => {
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
   const [dailyTrivia, setDailyTrivia] = useState<string>('');
   
+  // Farcaster State
+  const [sdkContext, setSdkContext] = useState<FrameContext | null>(null);
+  
   // Playlist State
   const [pastWinners, setPastWinners] = useState<DailyWinner[]>(PAST_WINNERS);
   const [isProcessingEnd, setIsProcessingEnd] = useState(false);
@@ -31,9 +34,12 @@ const App: React.FC = () => {
   useEffect(() => {
     const initSDK = async () => {
       try {
-        // Attempt to initialize SDK, but don't block app if it fails
+        // Attempt to initialize SDK
         if (sdk && sdk.actions) {
+          const context = await sdk.context;
+          setSdkContext(context);
           await sdk.actions.ready();
+          console.log("Farcaster SDK Ready. Context:", context);
         }
       } catch (err) {
         console.warn("Farcaster SDK init warning:", err);
@@ -66,37 +72,42 @@ const App: React.FC = () => {
 
     try {
       // Artificial delay for UX
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise(r => setTimeout(r, 600));
 
-      // Check for OKX Wallet first, then generic Ethereum (MetaMask, etc.)
+      // 1. PRIORITY: Check if we are in Farcaster and have a verified address
+      if (sdkContext?.user?.verifiedAddresses && sdkContext.user.verifiedAddresses.length > 0) {
+        const farcasterAddress = sdkContext.user.verifiedAddresses[0];
+        console.log("Connected via Farcaster Context:", farcasterAddress);
+        setWalletAddress(farcasterAddress);
+        setIsWalletConnected(true);
+        setIsConnecting(false);
+        return;
+      }
+
+      // 2. SECONDARY: Check for injected wallets (OKX, MetaMask, etc.)
       // @ts-ignore
       const provider = window.okxwallet || window.ethereum;
 
-      if (!provider) {
-        throw new Error("No wallet provider found");
+      if (provider) {
+        const accounts = await provider.request({ method: 'eth_requestAccounts' });
+        if (accounts && accounts.length > 0) {
+          setWalletAddress(accounts[0]);
+          setIsWalletConnected(true);
+          setIsConnecting(false);
+          return;
+        }
       }
 
-      // Request accounts
-      const accounts = await provider.request({ method: 'eth_requestAccounts' });
-
-      if (accounts && accounts.length > 0) {
-        setWalletAddress(accounts[0]);
-        setIsWalletConnected(true);
-      } else {
-        throw new Error("User rejected or no accounts");
-      }
+      // If we reach here, no provider was found or it returned no accounts
+      throw new Error("No connection method succeeded");
 
     } catch (error) {
-      console.warn("Wallet connection issue:", error);
-      console.info("Switching to Demo Wallet for smooth experience.");
+      console.warn("Wallet connection fell through to fallback:", error);
       
-      // FAIL-SAFE: Always fall back to demo mode so the user isn't blocked
-      // Wait a split second so it feels like a reaction
-      setTimeout(() => {
-        setWalletAddress("0x71C...9A21");
-        setIsWalletConnected(true);
-      }, 100);
-      
+      // 3. FALLBACK: Demo Mode (Fail-Safe)
+      // Always ensure the user feels "connected" to try the app
+      setWalletAddress("0x71C...9A21");
+      setIsWalletConnected(true);
     } finally {
       setIsConnecting(false);
     }
