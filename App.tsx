@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import sdk from '@farcaster/frame-sdk';
 import Header from './components/Header';
 import DailyWinnerHero from './components/DailyWinnerHero';
@@ -8,7 +8,7 @@ import TransactionModal from './components/TransactionModal';
 import PlaylistView from './components/PlaylistView';
 import { PAST_WINNERS } from './services/mockData';
 import { Song, AppView, VoteStatus, DailyWinner } from './types';
-import { generateDailyTrivia, generateVibeDescription } from './services/geminiService';
+import { generateVibeDescription } from './services/geminiService';
 import { castOnChainVote } from './services/web3Service';
 
 const App: React.FC = () => {
@@ -18,6 +18,10 @@ const App: React.FC = () => {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null); // Farcaster username
   
+  // Audio State
+  const [playingSongId, setPlayingSongId] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  
   // Start with empty or minimal list, users will fill it by searching
   const [songs, setSongs] = useState<Song[]>([
      {
@@ -25,20 +29,21 @@ const App: React.FC = () => {
         title: 'Not Like Us',
         artist: 'Kendrick Lamar',
         coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/38/79/e0/3879e025-da15-5698-1d89-190c81343008/24UMGIM47526.rgb.jpg/600x600bb.jpg',
-        voteCount: 420
+        voteCount: 420,
+        previewUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview112/v4/4e/62/78/4e62788b-e901-1a0a-1985-7168438e4949/mzaf_11578429908430132979.plus.aac.p.m4a'
      },
      {
         id: '1712593365',
         title: 'Espresso',
         artist: 'Sabrina Carpenter',
         coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/0b/20/56/0b20565d-3b1b-2162-6c1a-5c725497f27e/24UMGIM27615.rgb.jpg/600x600bb.jpg',
-        voteCount: 310
+        voteCount: 310,
+        previewUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview122/v4/48/25/09/48250930-1061-d562-d224-3840bf86c68a/mzaf_17723963524044198873.plus.aac.p.m4a'
      }
   ]);
 
   const [voteStatus, setVoteStatus] = useState<VoteStatus>('idle');
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
-  const [dailyTrivia, setDailyTrivia] = useState<string>('');
   
   // Farcaster State
   const [sdkContext, setSdkContext] = useState<any>(null);
@@ -74,14 +79,39 @@ const App: React.FC = () => {
     initSDK();
   }, []);
 
-  // Fetch trivia on mount
+  // Audio Logic
+  const handleTogglePlay = useCallback((song: Song) => {
+    if (!audioRef.current) {
+      audioRef.current = new Audio();
+      audioRef.current.onended = () => setPlayingSongId(null);
+    }
+
+    // If clicking the same song that is playing, pause it
+    if (playingSongId === song.id) {
+      audioRef.current.pause();
+      setPlayingSongId(null);
+      return;
+    }
+
+    // Play new song
+    if (song.previewUrl) {
+      audioRef.current.src = song.previewUrl;
+      audioRef.current.play().catch(e => console.error("Playback failed", e));
+      setPlayingSongId(song.id);
+    } else {
+      alert("No preview available for this track.");
+    }
+  }, [playingSongId]);
+
+  // Cleanup audio on unmount
   useEffect(() => {
-    let isMounted = true;
-    generateDailyTrivia().then(trivia => {
-      if (isMounted) setDailyTrivia(trivia);
-    });
-    return () => { isMounted = false; };
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    };
   }, []);
+
 
   // Sorting songs for top 10 display
   const sortedSongs = [...songs].sort((a, b) => b.voteCount - a.voteCount);
@@ -263,23 +293,22 @@ const App: React.FC = () => {
       />
 
       <main className="max-w-4xl mx-auto px-4 py-8">
-        {/* Trivia Banner */}
-        <div className="mb-6 flex items-center justify-center">
-           <span className="text-xs text-slate-500 bg-slate-900 border border-slate-800 px-4 py-1 rounded-full flex items-center gap-2">
-             <i className="fas fa-robot text-blue-500"></i>
-             <span className="font-semibold text-slate-400">Gemini AI:</span> 
-             {dailyTrivia || "Loading trivia..."}
-           </span>
-        </div>
+        {/* Removed Gemini Trivia Banner as requested */}
 
         {currentView === AppView.HOME && (
           <>
-            <DailyWinnerHero song={dailyWinner || songs[0]} />
+            <DailyWinnerHero 
+              song={dailyWinner || songs[0]} 
+              isPlaying={playingSongId === (dailyWinner?.id || songs[0].id)}
+              onTogglePlay={() => handleTogglePlay(dailyWinner || songs[0])}
+            />
             <VoteList 
               songs={sortedSongs} 
               onVote={handleVote} 
               isWalletConnected={isWalletConnected}
               secondsLeft={secondsLeft}
+              playingSongId={playingSongId}
+              onTogglePlay={handleTogglePlay}
             />
           </>
         )}
@@ -290,6 +319,8 @@ const App: React.FC = () => {
               onVote={handleVote} 
               isWalletConnected={isWalletConnected}
               secondsLeft={secondsLeft}
+              playingSongId={playingSongId}
+              onTogglePlay={handleTogglePlay}
             />
         )}
 

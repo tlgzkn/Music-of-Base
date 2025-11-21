@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Song } from '../types';
 import { generateVibeDescription } from '../services/geminiService';
@@ -5,10 +6,11 @@ import AudioVisualizer from './AudioVisualizer';
 
 interface DailyWinnerHeroProps {
   song: Song;
+  isPlaying: boolean;
+  onTogglePlay: () => void;
 }
 
-const DailyWinnerHero: React.FC<DailyWinnerHeroProps> = ({ song }) => {
-  const [isPlaying, setIsPlaying] = useState(false);
+const DailyWinnerHero: React.FC<DailyWinnerHeroProps> = ({ song, isPlaying, onTogglePlay }) => {
   const [vibe, setVibe] = useState<string>('Loading vibe check...');
 
   useEffect(() => {
@@ -19,11 +21,6 @@ const DailyWinnerHero: React.FC<DailyWinnerHeroProps> = ({ song }) => {
     return () => { isMounted = false; };
   }, [song]);
 
-  const togglePlay = () => {
-    setIsPlaying(!isPlaying);
-    // In a real app, this would trigger audio.play()
-  };
-
   return (
     <div className="relative w-full overflow-hidden rounded-3xl bg-gradient-to-br from-blue-900 via-slate-900 to-slate-950 shadow-2xl border border-blue-900/50 p-6 md:p-10 mb-8 group">
       {/* Background Glow */}
@@ -32,7 +29,7 @@ const DailyWinnerHero: React.FC<DailyWinnerHeroProps> = ({ song }) => {
       
       <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
         {/* Cover Art */}
-        <div className="relative group cursor-pointer shrink-0" onClick={togglePlay}>
+        <div className="relative group cursor-pointer shrink-0" onClick={onTogglePlay}>
           <div className={`absolute inset-0 bg-blue-500/20 rounded-2xl blur-xl transition-opacity duration-500 ${isPlaying ? 'opacity-100' : 'opacity-0'}`}></div>
           <img 
             src={song.coverUrl} 
@@ -70,7 +67,6 @@ const DailyWinnerHero: React.FC<DailyWinnerHeroProps> = ({ song }) => {
           {/* AI Description */}
           <div className="bg-gradient-to-r from-white/5 to-transparent border-l-4 border-blue-500/50 rounded-r-xl p-4 mb-8 backdrop-blur-sm">
             <p className="text-slate-300 italic text-sm leading-relaxed">
-              <span className="text-blue-400 font-bold mr-2">Gemini Vibe Check:</span>
               "{vibe}"
             </p>
           </div>

@@ -8,9 +8,18 @@ interface VoteListProps {
   onVote: (song: Song) => void;
   isWalletConnected: boolean;
   secondsLeft?: number;
+  playingSongId: string | null;
+  onTogglePlay: (song: Song) => void;
 }
 
-const VoteList: React.FC<VoteListProps> = ({ songs, onVote, isWalletConnected, secondsLeft = 0 }) => {
+const VoteList: React.FC<VoteListProps> = ({ 
+  songs, 
+  onVote, 
+  isWalletConnected, 
+  secondsLeft = 0,
+  playingSongId,
+  onTogglePlay
+}) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<Song[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -97,26 +106,30 @@ const VoteList: React.FC<VoteListProps> = ({ songs, onVote, isWalletConnected, s
           const existingSong = songs.find(s => s.id === song.id);
           const voteCount = existingSong ? existingSong.voteCount : song.voteCount;
           const rank = existingSong ? songs.indexOf(existingSong) + 1 : null;
+          const isPlaying = playingSongId === song.id;
 
           return (
             <div 
               key={song.id} 
-              className="group relative flex items-center gap-4 p-3 bg-slate-800/50 hover:bg-slate-800 rounded-xl border border-slate-700/50 hover:border-blue-500/50 transition-all"
+              className={`group relative flex items-center gap-4 p-3 rounded-xl border transition-all ${isPlaying ? 'bg-blue-900/20 border-blue-500/50' : 'bg-slate-800/50 hover:bg-slate-800 border-slate-700/50 hover:border-blue-500/50'}`}
             >
               {rank && !searchTerm ? (
                  <div className="w-8 text-center font-bold text-slate-500 text-lg">#{rank}</div>
               ) : (
-                <div className="w-8 flex justify-center">
-                   <button className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-slate-400">
-                     <i className="fas fa-play text-xs ml-0.5"></i>
-                   </button>
-                </div>
+                <div className="w-8"></div>
               )}
               
+              <button 
+                onClick={() => onTogglePlay(song)}
+                className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center transition-colors ${isPlaying ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-400 hover:bg-slate-600 hover:text-white'}`}
+              >
+                <i className={`fas ${isPlaying ? 'fa-pause' : 'fa-play'} text-xs ${isPlaying ? '' : 'ml-0.5'}`}></i>
+              </button>
+
               <img src={song.coverUrl} alt={song.title} className="w-12 h-12 rounded-lg object-cover bg-slate-900" />
               
               <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-white truncate">{song.title}</h3>
+                <h3 className={`font-bold truncate ${isPlaying ? 'text-blue-400' : 'text-white'}`}>{song.title}</h3>
                 <p className="text-sm text-slate-400 truncate">{song.artist}</p>
               </div>
 
