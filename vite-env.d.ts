@@ -1,4 +1,3 @@
-
 // Removed reference to vite/client as it was causing type definition errors in the environment
 // /// <reference types="vite/client" />
 
@@ -7,12 +6,13 @@ declare module "*.css" {
   export default content;
 }
 
-declare var process: {
-  env: {
+// Augment NodeJS namespace to ensure API_KEY is typed if node types are present
+declare namespace NodeJS {
+  interface ProcessEnv {
     API_KEY: string;
     [key: string]: string | undefined;
   }
-};
+}
 
 interface Window {
   okxwallet?: {
