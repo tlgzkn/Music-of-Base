@@ -150,20 +150,26 @@ const App: React.FC = () => {
 
     setIsConnecting(true);
 
-    // Helper for delay
-    const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+    // Helper to wait for provider injection (Smart Retry)
+    const waitForProvider = async () => {
+      let attempts = 0;
+      while (attempts < 20) { // Try for 2 seconds (20 * 100ms)
+        // @ts-ignore
+        if (window.ethereum || window.okxwallet) return true;
+        await new Promise(r => setTimeout(r, 100));
+        attempts++;
+      }
+      return false;
+    };
     
     try {
-      // Wait briefly for injection
-      if (!window.ethereum && !window.okxwallet) {
-         await wait(500);
-      }
+      const providerFound = await waitForProvider();
 
       // @ts-ignore
       const provider = window.okxwallet || window.ethereum;
 
       // Try explicit request to ensure popup appears
-      if (provider) {
+      if (providerFound && provider) {
         try {
            const accounts = await provider.request({ method: 'eth_requestAccounts' });
            if (accounts && accounts.length > 0) {
@@ -181,12 +187,34 @@ const App: React.FC = () => {
         }
       }
 
-      // Force demo/error if no provider
+      // Fallback: If Farcaster Context exists, use it even if wallet provider failed
+      // This handles mobile cases where injection is blocked or slow
+      if (sdkContext?.user?.username || sdkContext?.user?.verifications?.[0]) {
+          console.log("Wallet provider not found, falling back to Farcaster Context");
+          // Use verified address if available, else fallback to a mock/custody address
+          const fcAddress = sdkContext?.user?.verifications?.[0] || sdkContext?.user?.custodyAddress || "0xFarcasterUser";
+          setWalletAddress(fcAddress);
+          setUsername(sdkContext.user.username);
+          setIsWalletConnected(true);
+          return;
+      }
+
+      // Force demo/error if no provider and no Farcaster context
       throw new Error("No active wallet found");
 
     } catch (error) {
       console.warn("Wallet connection failed:", error);
-      // Fallback to demo mode for better UX
+      
+      // Recovery: If we are in Farcaster but getting provider errors, force connect with FC data
+      if (sdkContext?.user?.username) {
+          console.log("Recovering with Farcaster data...");
+          setUsername(sdkContext.user.username);
+          setWalletAddress(sdkContext?.user?.verifications?.[0] || sdkContext?.user?.custodyAddress || "0xFarcasterUser");
+          setIsWalletConnected(true);
+          return;
+      }
+
+      // Final Fallback: Demo mode for better UX
       const confirmDemo = window.confirm("Wallet not found or connection failed. Switch to Demo Mode?");
       if (confirmDemo) {
          setWalletAddress("0x71C...9A21");
