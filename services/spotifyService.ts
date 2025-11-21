@@ -1,4 +1,3 @@
-
 import { Song } from '../types';
 
 // Read variables from process.env (injected via vite.config.ts)

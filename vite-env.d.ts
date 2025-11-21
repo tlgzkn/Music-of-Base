@@ -1,4 +1,3 @@
-
 // Removed reference to vite/client as it was causing type definition errors in the environment
 // /// <reference types="vite/client" />
 

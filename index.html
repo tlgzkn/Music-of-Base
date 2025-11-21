@@ -11,33 +11,36 @@
     
     <!-- Farcaster Frame Meta Tags -->
     <meta property="fc:frame" content="vNext" />
-    <meta property="fc:frame:image" content="https://placehold.co/600x400/1e293b/3b82f6.png?text=Music+of+Base+Daily+Vote" />
-    <meta property="fc:frame:button:1" content="Launch App" />
+    <meta property="fc:frame:image" content="https://music-of-base.vercel.app/image.png" />
+    <meta property="fc:frame:button:1" content="Vote Now" />
     <meta property="fc:frame:button:1:action" content="link" />
     <meta property="fc:frame:button:1:target" content="https://music-of-base.vercel.app" /> 
     
     <!-- Open Graph / Social Sharing -->
     <meta property="og:title" content="Music of Base" />
     <meta property="og:description" content="Vote for the song of the day on Base." />
-    <meta property="og:image" content="https://placehold.co/600x400/1e293b/3b82f6.png?text=Music+of+Base" />
+    <meta property="og:image" content="https://music-of-base.vercel.app/image.png" />
 
-    <!-- Icons -->
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     
     <!-- Browser Polyfill for Process -->
     <script>
       window.process = window.process || { env: { NODE_ENV: 'production' } };
     </script>
-<script type="importmap">
+  <script type="importmap">
 {
   "imports": {
+    "vite": "https://aistudiocdn.com/vite@^7.2.4",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "react": "https://aistudiocdn.com/react@^19.2.0",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
-    "@farcaster/frame-sdk": "https://aistudiocdn.com/@farcaster/frame-sdk@^0.1.12",
-    "vite": "https://aistudiocdn.com/vite@^7.2.4",
-    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1"
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1",
+    "@farcaster/frame-sdk": "https://aistudiocdn.com/@farcaster/frame-sdk@^0.1.12"
   }
 }
 </script>

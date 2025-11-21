@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import sdk from '@farcaster/frame-sdk';
 import Header from './components/Header';
@@ -359,6 +358,7 @@ const App: React.FC = () => {
               playingSongId={playingSongId}
               onTogglePlay={handleTogglePlay}
               pastWinners={pastWinners}
+              onConnectWallet={handleConnectWallet}
             />
           </>
         )}
@@ -372,6 +372,7 @@ const App: React.FC = () => {
               playingSongId={playingSongId}
               onTogglePlay={handleTogglePlay}
               pastWinners={pastWinners}
+              onConnectWallet={handleConnectWallet}
             />
         )}
 
