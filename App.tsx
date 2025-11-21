@@ -242,15 +242,23 @@ const App: React.FC = () => {
   // Logic to end the day
   const endDayLogic = useCallback(async () => {
     if (isProcessingEnd) return;
+    
+    const winner = sortedSongs[0];
+    if (!winner) return;
+
+    // DUPLICATE CHECK: Prevent adding the same song multiple times if the page refreshes or timer glitches
+    if (pastWinners.length > 0) {
+      const lastWinner = pastWinners[0];
+      // Compare Title and Artist (ID might be different depending on source)
+      if (lastWinner.title === winner.title && lastWinner.artist === winner.artist) {
+          console.log("Day already ended for this winner. Skipping duplicate processing.");
+          return;
+      }
+    }
+
     setIsProcessingEnd(true);
     
     try {
-        const winner = sortedSongs[0];
-        if (!winner) {
-             setIsProcessingEnd(false);
-             return;
-        }
-
         console.log("Ending day. Winner:", winner.title);
         
         // 1. Generate vibe with Gemini
@@ -297,7 +305,7 @@ const App: React.FC = () => {
       } finally {
         setIsProcessingEnd(false);
       }
-  }, [isProcessingEnd, sortedSongs]);
+  }, [isProcessingEnd, sortedSongs, pastWinners]);
 
   // Countdown Effect
   useEffect(() => {
@@ -350,6 +358,7 @@ const App: React.FC = () => {
               secondsLeft={secondsLeft}
               playingSongId={playingSongId}
               onTogglePlay={handleTogglePlay}
+              pastWinners={pastWinners}
             />
           </>
         )}
@@ -362,6 +371,7 @@ const App: React.FC = () => {
               secondsLeft={secondsLeft}
               playingSongId={playingSongId}
               onTogglePlay={handleTogglePlay}
+              pastWinners={pastWinners}
             />
         )}
 

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Song } from '../types';
+import { Song, DailyWinner } from '../types';
 import { searchRealTracks } from '../services/musicService';
 
 interface VoteListProps {
@@ -10,6 +10,7 @@ interface VoteListProps {
   secondsLeft?: number;
   playingSongId: string | null;
   onTogglePlay: (song: Song) => void;
+  pastWinners?: DailyWinner[];
 }
 
 const VoteList: React.FC<VoteListProps> = ({ 
@@ -18,7 +19,8 @@ const VoteList: React.FC<VoteListProps> = ({
   isWalletConnected, 
   secondsLeft = 0,
   playingSongId,
-  onTogglePlay
+  onTogglePlay,
+  pastWinners = []
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<Song[]>([]);
@@ -115,12 +117,26 @@ const VoteList: React.FC<VoteListProps> = ({
           const rank = existingSong ? songs.indexOf(existingSong) + 1 : null;
           const isPlaying = playingSongId === song.id;
 
+          // Check if song has already won previously (by title and artist to be safe)
+          const isPastWinner = pastWinners.some(w => w.title === song.title && w.artist === song.artist);
+          const wonDate = isPastWinner ? pastWinners.find(w => w.title === song.title && w.artist === song.artist)?.date : '';
+
           return (
             <div 
               key={song.id} 
-              className={`group relative flex items-center gap-4 p-3 rounded-xl border transition-all ${isPlaying ? 'bg-blue-900/20 border-blue-500/50' : 'bg-slate-800/50 hover:bg-slate-800 border-slate-700/50 hover:border-blue-500/50'}`}
+              className={`group relative flex items-center gap-4 p-3 rounded-xl border transition-all ${
+                isPastWinner 
+                  ? 'bg-amber-900/10 border-amber-600/30 opacity-80'
+                  : isPlaying 
+                    ? 'bg-blue-900/20 border-blue-500/50' 
+                    : 'bg-slate-800/50 hover:bg-slate-800 border-slate-700/50 hover:border-blue-500/50'
+              }`}
             >
-              {rank && !searchTerm ? (
+              {isPastWinner ? (
+                <div className="w-8 text-center">
+                  <i className="fas fa-trophy text-amber-500"></i>
+                </div>
+              ) : rank && !searchTerm ? (
                  <div className="w-8 text-center font-bold text-slate-500 text-lg">#{rank}</div>
               ) : (
                 <div className="w-8"></div>
@@ -133,10 +149,17 @@ const VoteList: React.FC<VoteListProps> = ({
                 <i className={`fas ${isPlaying ? 'fa-pause' : 'fa-play'} text-xs ${isPlaying ? '' : 'ml-0.5'}`}></i>
               </button>
 
-              <img src={song.coverUrl} alt={song.title} className="w-12 h-12 rounded-lg object-cover bg-slate-900" />
+              <img src={song.coverUrl} alt={song.title} className={`w-12 h-12 rounded-lg object-cover bg-slate-900 ${isPastWinner ? 'sepia-[.5]' : ''}`} />
               
               <div className="flex-1 min-w-0">
-                <h3 className={`font-bold truncate ${isPlaying ? 'text-blue-400' : 'text-white'}`}>{song.title}</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className={`font-bold truncate ${isPastWinner ? 'text-amber-400' : isPlaying ? 'text-blue-400' : 'text-white'}`}>{song.title}</h3>
+                  {isPastWinner && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      Hall of Fame
+                    </span>
+                  )}
+                </div>
                 <p className="text-sm text-slate-400 truncate">{song.artist}</p>
               </div>
 
@@ -145,17 +168,26 @@ const VoteList: React.FC<VoteListProps> = ({
                  <div className="text-xs text-slate-500">votes</div>
               </div>
 
-              <button 
-                onClick={() => onVote(song)}
-                disabled={!isWalletConnected}
-                className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors whitespace-nowrap ${
-                  isWalletConnected 
-                  ? 'bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white border border-blue-900' 
-                  : 'bg-slate-800 text-slate-600 cursor-not-allowed'
-                }`}
-              >
-                {searchTerm ? 'Nominate' : 'Vote'}
-              </button>
+              {isPastWinner ? (
+                 <button 
+                   disabled
+                   className="px-4 py-2 rounded-lg text-sm font-bold bg-slate-800 text-amber-500/50 border border-slate-700 cursor-default whitespace-nowrap"
+                 >
+                   Won on {wonDate?.split(',')[0]}
+                 </button>
+              ) : (
+                <button 
+                  onClick={() => onVote(song)}
+                  disabled={!isWalletConnected}
+                  className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors whitespace-nowrap ${
+                    isWalletConnected 
+                    ? 'bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white border border-blue-900' 
+                    : 'bg-slate-800 text-slate-600 cursor-not-allowed'
+                  }`}
+                >
+                  {searchTerm ? 'Nominate' : 'Vote'}
+                </button>
+              )}
             </div>
           );
         })}
