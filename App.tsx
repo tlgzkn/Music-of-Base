@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import sdk, { type FrameContext } from '@farcaster/frame-sdk';
+import sdk from '@farcaster/frame-sdk';
 import Header from './components/Header';
 import DailyWinnerHero from './components/DailyWinnerHero';
 import VoteList from './components/VoteList';
@@ -21,7 +21,7 @@ const App: React.FC = () => {
   const [dailyTrivia, setDailyTrivia] = useState<string>('');
   
   // Farcaster State
-  const [sdkContext, setSdkContext] = useState<FrameContext | null>(null);
+  const [sdkContext, setSdkContext] = useState<any>(null);
   
   // Playlist State
   const [pastWinners, setPastWinners] = useState<DailyWinner[]>(PAST_WINNERS);
