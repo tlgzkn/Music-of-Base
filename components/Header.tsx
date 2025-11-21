@@ -8,10 +8,11 @@ interface HeaderProps {
   isWalletConnected: boolean;
   isConnecting: boolean;
   walletAddress: string | null;
+  username?: string | null; // Added Farcaster username support
   connectWallet: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, isWalletConnected, isConnecting, walletAddress, connectWallet }) => {
+const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, isWalletConnected, isConnecting, walletAddress, username, connectWallet }) => {
   
   // Helper to format address (e.g. 0x1234...5678)
   const formatAddress = (addr: string) => {
@@ -68,10 +69,16 @@ const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, isWalletCo
             <span className="flex items-center gap-2">
               <i className="fas fa-spinner fa-spin"></i> Connecting...
             </span>
-          ) : isWalletConnected && walletAddress ? (
+          ) : isWalletConnected ? (
             <span className="flex items-center gap-2">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              {formatAddress(walletAddress)}
+              {username ? (
+                <>
+                  <i className="fas fa-user-astronaut text-xs"></i> @{username}
+                </>
+              ) : (
+                formatAddress(walletAddress || '')
+              )}
             </span>
           ) : (
             'Connect Wallet'

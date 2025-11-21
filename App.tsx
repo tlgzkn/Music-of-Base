@@ -15,6 +15,7 @@ const App: React.FC = () => {
   const [isWalletConnected, setIsWalletConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [username, setUsername] = useState<string | null>(null); // Farcaster username
   const [songs, setSongs] = useState<Song[]>(INITIAL_SONGS);
   const [voteStatus, setVoteStatus] = useState<VoteStatus>('idle');
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
@@ -38,6 +39,12 @@ const App: React.FC = () => {
         if (sdk && sdk.actions) {
           const context = await sdk.context;
           setSdkContext(context);
+          
+          // Auto-extract username if available
+          if (context?.user?.username) {
+             setUsername(context.user.username);
+          }
+
           await sdk.actions.ready();
           console.log("Farcaster SDK Ready. Context:", context);
         }
@@ -65,6 +72,7 @@ const App: React.FC = () => {
     if (isWalletConnected) {
       setIsWalletConnected(false);
       setWalletAddress(null);
+      setUsername(null);
       return;
     }
 
@@ -74,14 +82,28 @@ const App: React.FC = () => {
       // Artificial delay for UX
       await new Promise(r => setTimeout(r, 600));
 
-      // 1. PRIORITY: Check if we are in Farcaster and have a verified address
-      if (sdkContext?.user?.verifiedAddresses && sdkContext.user.verifiedAddresses.length > 0) {
-        const farcasterAddress = sdkContext.user.verifiedAddresses[0];
-        console.log("Connected via Farcaster Context:", farcasterAddress);
-        setWalletAddress(farcasterAddress);
-        setIsWalletConnected(true);
-        setIsConnecting(false);
-        return;
+      // 1. PRIORITY: Check if we are in Farcaster Frame Context
+      if (sdkContext?.user) {
+        // Try verified address first (user linked ETH wallet)
+        let farcasterAddress = sdkContext.user.verifiedAddresses?.[0];
+        
+        // Fallback to custody address (the Farcaster account wallet)
+        if (!farcasterAddress) {
+           farcasterAddress = sdkContext.user.custodyAddress;
+        }
+
+        if (farcasterAddress) {
+          console.log("Connected via Farcaster Context:", farcasterAddress);
+          setWalletAddress(farcasterAddress);
+          
+          if (sdkContext.user.username) {
+            setUsername(sdkContext.user.username);
+          }
+
+          setIsWalletConnected(true);
+          setIsConnecting(false);
+          return;
+        }
       }
 
       // 2. SECONDARY: Check for injected wallets (OKX, MetaMask, etc.)
@@ -107,6 +129,9 @@ const App: React.FC = () => {
       // 3. FALLBACK: Demo Mode (Fail-Safe)
       // Always ensure the user feels "connected" to try the app
       setWalletAddress("0x71C...9A21");
+      if (sdkContext?.user?.username) {
+         setUsername(sdkContext.user.username);
+      }
       setIsWalletConnected(true);
     } finally {
       setIsConnecting(false);
@@ -205,6 +230,7 @@ const App: React.FC = () => {
         isWalletConnected={isWalletConnected}
         isConnecting={isConnecting}
         walletAddress={walletAddress}
+        username={username}
         connectWallet={handleConnectWallet}
       />
 
