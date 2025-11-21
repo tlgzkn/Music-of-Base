@@ -40,7 +40,7 @@ const App: React.FC = () => {
           const context = await sdk.context;
           setSdkContext(context);
           
-          // Auto-extract username if available
+          // Auto-extract username if available but don't set connected status yet
           if (context?.user?.username) {
              setUsername(context.user.username);
           }
@@ -73,65 +73,68 @@ const App: React.FC = () => {
       setIsWalletConnected(false);
       setWalletAddress(null);
       setUsername(null);
+      // If we are in Farcaster, keep the username for display but show as disconnected
+      if (sdkContext?.user?.username) {
+         setUsername(sdkContext.user.username);
+      }
       return;
     }
 
     setIsConnecting(true);
 
     try {
-      // Artificial delay for UX
-      await new Promise(r => setTimeout(r, 600));
-
-      // 1. PRIORITY: Check if we are in Farcaster Frame Context
-      if (sdkContext?.user) {
-        // Try verified address first (user linked ETH wallet)
-        let farcasterAddress = sdkContext.user.verifiedAddresses?.[0];
-        
-        // Fallback to custody address (the Farcaster account wallet)
-        if (!farcasterAddress) {
-           farcasterAddress = sdkContext.user.custodyAddress;
-        }
-
-        if (farcasterAddress) {
-          console.log("Connected via Farcaster Context:", farcasterAddress);
-          setWalletAddress(farcasterAddress);
-          
-          if (sdkContext.user.username) {
-            setUsername(sdkContext.user.username);
-          }
-
-          setIsWalletConnected(true);
-          setIsConnecting(false);
-          return;
-        }
-      }
-
-      // 2. SECONDARY: Check for injected wallets (OKX, MetaMask, etc.)
+      // 1. Attempt Real Wallet Connection (Force Popup)
       // @ts-ignore
       const provider = window.okxwallet || window.ethereum;
 
       if (provider) {
+        console.log("Found provider, requesting accounts...");
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
+        
         if (accounts && accounts.length > 0) {
+          console.log("Wallet Connected:", accounts[0]);
           setWalletAddress(accounts[0]);
           setIsWalletConnected(true);
+          
+          // If we are in Farcaster context, ensure username is set
+          if (sdkContext?.user?.username) {
+            setUsername(sdkContext.user.username);
+          }
+          
           setIsConnecting(false);
           return;
         }
       }
 
-      // If we reach here, no provider was found or it returned no accounts
-      throw new Error("No connection method succeeded");
+      // If we are here, provider exists but returned no accounts, or provider doesn't exist.
+      // BUT if we are in Farcaster Frame, we might not have a standard provider but still have a context address.
+      // This is a fallback for "Read-Only" connection if the active connection failed.
+      if (sdkContext?.user) {
+        let farcasterAddress = sdkContext.user.verifiedAddresses?.[0] || sdkContext.user.custodyAddress;
+        if (farcasterAddress) {
+             console.log("Active connection failed, falling back to Farcaster Context Address");
+             setWalletAddress(farcasterAddress);
+             if (sdkContext.user.username) setUsername(sdkContext.user.username);
+             setIsWalletConnected(true);
+             setIsConnecting(false);
+             return;
+        }
+      }
+
+      throw new Error("No wallet provider found");
 
     } catch (error) {
-      console.warn("Wallet connection fell through to fallback:", error);
+      console.warn("Wallet connection error, switching to Demo Mode:", error);
       
       // 3. FALLBACK: Demo Mode (Fail-Safe)
       // Always ensure the user feels "connected" to try the app
       setWalletAddress("0x71C...9A21");
+      
+      // Even in demo mode, if we know the Farcaster username, show it
       if (sdkContext?.user?.username) {
          setUsername(sdkContext.user.username);
       }
+      
       setIsWalletConnected(true);
     } finally {
       setIsConnecting(false);
