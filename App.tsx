@@ -10,6 +10,7 @@ import { PAST_WINNERS } from './services/mockData';
 import { Song, AppView, VoteStatus, DailyWinner } from './types';
 import { generateVibeDescription } from './services/geminiService';
 import { castOnChainVote } from './services/web3Service';
+import { searchSpotifyTrack, addTrackToPlaylist, handleSpotifyCallback, authenticateSpotify } from './services/spotifyService';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>(AppView.HOME);
@@ -59,8 +60,18 @@ const App: React.FC = () => {
   });
   const [isProcessingEnd, setIsProcessingEnd] = useState(false);
 
-  // Timer State
+  // Timer State - Starts at 15s for demo, resets to 24h (86400s)
   const [secondsLeft, setSecondsLeft] = useState(15);
+
+  // Check for Spotify Auth Callback
+  useEffect(() => {
+    const success = handleSpotifyCallback();
+    if (success) {
+      alert("Spotify Connected! Playlist syncing is now active.");
+      // Clean URL
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, []);
 
   // Initialize Farcaster SDK
   useEffect(() => {
@@ -125,10 +136,12 @@ const App: React.FC = () => {
   const dailyWinner = sortedSongs[0]; 
 
   const handleConnectWallet = async () => {
+    // If already connected, disconnect
     if (isWalletConnected) {
       setIsWalletConnected(false);
       setWalletAddress(null);
       setUsername(null);
+      // Retain context username if available
       if (sdkContext?.user?.username) {
          setUsername(sdkContext.user.username);
       }
@@ -137,12 +150,11 @@ const App: React.FC = () => {
 
     setIsConnecting(true);
 
-    // Wait function to handle injection delay
+    // Helper for delay
     const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
     
     try {
-      // Always force popup by default for better UX inside Frame
-      // Check for providers with a small delay for injection
+      // Wait briefly for injection
       if (!window.ethereum && !window.okxwallet) {
          await wait(500);
       }
@@ -150,38 +162,39 @@ const App: React.FC = () => {
       // @ts-ignore
       const provider = window.okxwallet || window.ethereum;
 
+      // Try explicit request to ensure popup appears
       if (provider) {
-        console.log("Found provider, requesting accounts...");
-        // Force request to trigger popup
-        const accounts = await provider.request({ method: 'eth_requestAccounts' });
-        
-        if (accounts && accounts.length > 0) {
-          console.log("Wallet Connected:", accounts[0]);
-          setWalletAddress(accounts[0]);
-          
-          // Match Farcaster username if available
-          if (sdkContext?.user?.username) {
-            setUsername(sdkContext.user.username);
-          }
-          
-          setIsWalletConnected(true);
-          return; // Success exit
+        try {
+           const accounts = await provider.request({ method: 'eth_requestAccounts' });
+           if (accounts && accounts.length > 0) {
+              setWalletAddress(accounts[0]);
+              // If Farcaster username exists, attach it
+              if (sdkContext?.user?.username) {
+                 setUsername(sdkContext.user.username);
+              }
+              setIsWalletConnected(true);
+              return;
+           }
+        } catch (err) {
+          console.error("User rejected request", err);
+          throw new Error("User rejected");
         }
       }
 
-      // If real wallet fails or doesn't exist, throw to trigger demo mode
+      // Force demo/error if no provider
       throw new Error("No active wallet found");
 
     } catch (error) {
-      alert("Wallet connection failed or rejected. Switching to Demo Mode for preview.");
-      console.warn("Wallet connection failed, switching to Demo Mode:", error);
-      
-      // FAIL-SAFE: Switch to Demo Mode immediately
-      setWalletAddress("0x71C...9A21");
-      if (sdkContext?.user?.username) {
-         setUsername(sdkContext.user.username);
+      console.warn("Wallet connection failed:", error);
+      // Fallback to demo mode for better UX
+      const confirmDemo = window.confirm("Wallet not found or connection failed. Switch to Demo Mode?");
+      if (confirmDemo) {
+         setWalletAddress("0x71C...9A21");
+         if (sdkContext?.user?.username) {
+            setUsername(sdkContext.user.username);
+         }
+         setIsWalletConnected(true);
       }
-      setIsWalletConnected(true);
     } finally {
       setIsConnecting(false);
     }
@@ -215,9 +228,6 @@ const App: React.FC = () => {
         }
       });
       
-      // Clear search in VoteList (handled by UI re-render with updated songs list)
-      
-      // Auto close modal after success
       setTimeout(() => {
         closeVoteModal();
       }, 2000);
@@ -243,8 +253,20 @@ const App: React.FC = () => {
 
         console.log("Ending day. Winner:", winner.title);
         
-        // Generate vibe with Gemini
+        // 1. Generate vibe with Gemini
         const vibe = await generateVibeDescription(winner);
+
+        // 2. Try to Add to Spotify Playlist
+        // Note: This only works if an Admin (you) has connected Spotify previously on this browser
+        console.log("Attempting Spotify Sync...");
+        const spotifyUri = await searchSpotifyTrack(winner.title, winner.artist);
+        if (spotifyUri) {
+          const added = await addTrackToPlaylist(spotifyUri);
+          if (added) console.log("Successfully added to Spotify!");
+          else console.warn("Failed to add to Spotify (Check Auth/Token)");
+        } else {
+          console.warn("Track not found on Spotify");
+        }
         
         const newWinnerRecord: DailyWinner = {
           ...winner,
@@ -253,20 +275,21 @@ const App: React.FC = () => {
           vibeDescription: vibe
         };
 
-        // Update State and LocalStorage
+        // 3. Update State and LocalStorage
         setPastWinners(prev => {
+          // Ensure no exact duplicates (optional check)
           const newHistory = [newWinnerRecord, ...prev];
           localStorage.setItem('music_base_playlist', JSON.stringify(newHistory));
           return newHistory;
         });
 
-        // Reset votes for next day
+        // 4. Reset votes for next day
         setSongs(prev => prev.map(s => ({
           ...s,
           voteCount: 0
         })));
 
-        // Switch view to playlist to show the result
+        // 5. Switch view to playlist
         setCurrentView(AppView.PLAYLIST);
 
       } catch (error) {
@@ -283,7 +306,7 @@ const App: React.FC = () => {
     const interval = setInterval(() => {
       setSecondsLeft(prev => {
         if (prev <= 1) {
-          // Trigger end day
+          // Trigger end day logic
           endDayLogic();
           return 86400; // Reset timer for next day (24h)
         }
@@ -293,6 +316,11 @@ const App: React.FC = () => {
 
     return () => clearInterval(interval);
   }, [endDayLogic, isProcessingEnd]);
+
+  // Helper to handle manual Spotify auth trigger
+  const handleSpotifyLogin = () => {
+    authenticateSpotify();
+  };
 
   return (
     <div className="min-h-screen pb-20 md:pb-0 relative">
@@ -304,11 +332,10 @@ const App: React.FC = () => {
         walletAddress={walletAddress}
         username={username}
         connectWallet={handleConnectWallet}
+        onConnectSpotify={handleSpotifyLogin} // Pass the handler
       />
 
       <main className="max-w-4xl mx-auto px-4 py-8">
-        {/* Removed Gemini Trivia Banner as requested */}
-
         {currentView === AppView.HOME && (
           <>
             <DailyWinnerHero 
@@ -349,7 +376,7 @@ const App: React.FC = () => {
             <div className="text-center animate-pulse">
                 <i className="fas fa-compact-disc fa-spin text-6xl text-blue-500 mb-4"></i>
                 <h2 className="text-2xl font-bold text-white">Finalizing Day...</h2>
-                <p className="text-blue-300">Minting daily winner to playlist history</p>
+                <p className="text-blue-300">Syncing to Blockchain & Spotify Playlist...</p>
             </div>
         </div>
       )}

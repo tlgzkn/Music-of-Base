@@ -8,13 +8,22 @@ interface HeaderProps {
   isWalletConnected: boolean;
   isConnecting: boolean;
   walletAddress: string | null;
-  username?: string | null; // Added Farcaster username support
+  username?: string | null;
   connectWallet: () => void;
+  onConnectSpotify?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, isWalletConnected, isConnecting, walletAddress, username, connectWallet }) => {
+const Header: React.FC<HeaderProps> = ({ 
+  currentView, 
+  setCurrentView, 
+  isWalletConnected, 
+  isConnecting, 
+  walletAddress, 
+  username, 
+  connectWallet,
+  onConnectSpotify
+}) => {
   
-  // Helper to format address (e.g. 0x1234...5678)
   const formatAddress = (addr: string) => {
     if (!addr) return '';
     return `${addr.substring(0, 4)}...${addr.substring(addr.length - 4)}`;
@@ -32,20 +41,30 @@ const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, isWalletCo
           </span>
         </div>
 
-        <nav className="hidden md:flex gap-6 text-sm font-medium text-slate-400">
+        <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-400">
           <button 
             onClick={() => setCurrentView(AppView.HOME)}
             className={`hover:text-blue-400 transition-colors ${currentView === AppView.HOME ? 'text-blue-400' : ''}`}
           >
             Today's Mix
           </button>
-          {/* Removed Vote Now Tab */}
           <button 
              onClick={() => setCurrentView(AppView.PLAYLIST)}
              className={`hover:text-blue-400 transition-colors ${currentView === AppView.PLAYLIST ? 'text-blue-400' : ''}`}
           >
             Playlist
           </button>
+          
+          {/* Secret Admin Button for Spotify Auth - Only visible on desktop/md */}
+          {onConnectSpotify && (
+            <button 
+              onClick={onConnectSpotify}
+              className="opacity-20 hover:opacity-100 transition-opacity text-green-500"
+              title="Admin: Connect Spotify"
+            >
+              <i className="fab fa-spotify"></i>
+            </button>
+          )}
         </nav>
 
         <button 
@@ -90,7 +109,6 @@ const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, isWalletCo
             <i className="fas fa-home"></i>
             <span className="text-[10px]">Home</span>
           </button>
-          {/* Removed Vote Now Tab */}
           <button 
              onClick={() => setCurrentView(AppView.PLAYLIST)}
              className={`p-2 flex flex-col items-center gap-1 ${currentView === AppView.PLAYLIST ? 'text-blue-400' : 'text-slate-500'}`}
